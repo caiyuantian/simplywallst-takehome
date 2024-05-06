@@ -5,7 +5,7 @@ import { CompanyRequestBody } from "../interfaces/company";
 
 @Service()
 export class CompanyRepository {
-  getCompanies = async (params: CompanyRequestBody) => {
+  getCompanies = async (params: CompanyRequestBody): Promise<Partial<Company>[]> => {
     const { select, score, symbol, orderBy, limit, offset } = params;
     const query = AppDataSource.getRepository(Company).createQueryBuilder("c");
 

@@ -1,7 +1,13 @@
 import { CompanyRepository } from "../repositories/companyRepository";
 import { CompanyPriceCloseRepository } from "../repositories/companyPriceCloseRepository";
 import { Inject, Service } from "typedi";
-import { CompanyRequestBody } from "../interfaces/company";
+import {
+  CompanyRequestBody,
+  CompanyVolatility,
+  CompanyPrice,
+  CompanyDetail,
+} from "../interfaces/company";
+import { Company } from "../models/company";
 
 @Service()
 export class CompanyService {
@@ -10,28 +16,31 @@ export class CompanyService {
   @Inject()
   companyPriceCloseRepository: CompanyPriceCloseRepository;
 
-  getCompanies = async (body: CompanyRequestBody) => {
+  getCompanies = async (body: CompanyRequestBody): Promise<CompanyDetail[]> => {
     try {
-      const company: any = await this.companyRepository.getCompanies(body);
+      const company: Partial<Company>[] =
+        await this.companyRepository.getCompanies(body);
 
       // Get prices
-      const prices =
+      const prices: CompanyPrice[] =
         await this.companyPriceCloseRepository.getLatestCompanyPriceClose();
       // Get volatilities
-      const volatilities =
+      const volatilities: CompanyVolatility[] =
         await this.companyPriceCloseRepository.getCompanyVolatility(1500);
 
       // Get the final result
-      const result = company.map((c: any) => {
-        const price = prices.find((p: any) => p["company_id"] === c.id);
-        c["lastPrice"] = price.price;
+      const results: CompanyDetail[] = [];
+      company.map((c) => {
+        let result: CompanyDetail = {...c};
+        const price = prices.find((p: CompanyPrice) => p["companyId"] === c.id);
+        result.lastPrice = price?.price;
         const volatility = volatilities.find(
-          (v: any) => v["company_id"] === c.id
+          (v: CompanyVolatility) => v["companyId"] === c.id
         );
-        c["volatility"] = volatility.volatility;
-        return c;
+        result.volatility = volatility?.volatility;
+        results.push(result);
       });
-      return result;
+      return results;
     } catch (err) {
       console.log(err);
       throw err;
